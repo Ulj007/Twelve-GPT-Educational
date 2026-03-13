@@ -6,8 +6,8 @@ import pandas as pd
 
 
 from utils.sentences import format_metric
-from classes.data_point import Player, Country, Person
-from classes.data_source import PlayerStats, CountryStats, PersonStat
+from classes.data_point import Player, Country, Person, Team
+from classes.data_source import PlayerStats, CountryStats, PersonStat, TeamStats
 from typing import Union
 
 
@@ -280,7 +280,7 @@ class DistributionPlot(Visual):
             )
 
 
-    def add_player(self, player: Union[Player, Country], n_group, metrics):
+    def add_player(self, player: Union[Player, Country, Team], n_group, metrics):
 
         # # Make list of all metrics with _Z and _Rank added at end
         metrics_Z = [metric + "_Z" for metric in metrics]
@@ -295,8 +295,11 @@ class DistributionPlot(Visual):
                 player.ser_metrics
             )  # Assuming countries have a similar metric structure
             name = player.name
+        elif isinstance(player, Team):
+            ser_plot = player.ser_metrics
+            name = player.name
         else:
-            raise TypeError("Invalid player type: expected Player or Country")
+            raise TypeError("Invalid player type: expected Player, Country or Team")
 
         self.add_data_point(
             ser_plot=ser_plot,
@@ -321,7 +324,7 @@ class DistributionPlot(Visual):
     #         legend=f"Other players  ",  # space at end is important
     #     )
 
-    def add_players(self, players: Union[PlayerStats, CountryStats], metrics):
+    def add_players(self, players: Union[PlayerStats, CountryStats, TeamStats], metrics):
 
         # Make list of all metrics with _Z and _Rank added at end
         metrics_Z = [metric + "_Z" for metric in metrics]
@@ -345,8 +348,17 @@ class DistributionPlot(Visual):
                 hover_string="Rank: %{customdata}/" + str(len(players.df)),
                 legend=f"Other countries  ",  # space at end is important
             )
+        elif isinstance(players, TeamStats):
+            self.add_group_data(
+                df_plot=players.df,
+                plots="_Z",
+                names=players.df["team_name"],
+                hover="_Ranks",
+                hover_string="Rank: %{customdata}/" + str(len(players.df)),
+                legend=f"Other teams  ",
+            )
         else:
-            raise TypeError("Invalid player type: expected Player or Country")
+            raise TypeError("Invalid player type: expected PlayerStats, CountryStats or TeamStats")
 
     # def add_title_from_player(self, player: Player):
     #     self.player = player
@@ -356,7 +368,7 @@ class DistributionPlot(Visual):
 
     #     self.add_title(title, subtitle)
 
-    def add_title_from_player(self, player: Union[Player, Country]):
+    def add_title_from_player(self, player: Union[Player, Country, Team]):
         self.player = player
 
         title = f"Evaluation of {player.name}?"
@@ -364,8 +376,10 @@ class DistributionPlot(Visual):
             subtitle = f"Based on {player.minutes_played} minutes played"
         elif isinstance(player, Country):
             subtitle = f"Based on questions answered in the World Values Survey"
+        elif isinstance(player, Team):
+            subtitle = f"Based on team summary proportions"
         else:
-            raise TypeError("Invalid player type: expected Player or Country")
+            raise TypeError("Invalid player type: expected Player, Country or Team")
 
         self.add_title(title, subtitle)
 

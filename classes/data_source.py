@@ -576,3 +576,44 @@ class PersonStat(Stats):
         ser_metrics = self.df.squeeze()
 
         return self.data_point_class(id=id, name=name, ser_metrics=ser_metrics)
+
+
+class TeamStats(Stats):
+    data_point_class = data_point.Team
+    negative_metrics = []
+
+    def __init__(self):
+        super().__init__()
+
+    def get_raw_data(self):
+        df = pd.read_csv("utils/team_summary.csv")
+        return df
+
+    def process_data(self, df_raw):
+        if df_raw["team_name"].isnull().values.any():
+            raise ValueError("Team name column contains NaN values")
+
+        if df_raw["team_name"].duplicated().any():
+            raise ValueError("Team name column contains duplicates")
+
+        if len(df_raw) < 10:
+            raise Exception("Not enough teams")
+
+        return df_raw
+
+    def to_data_point(self) -> data_point.Team:
+        id = self.df.index[0]
+
+        self.df.reset_index(drop=True, inplace=True)
+
+        name = self.df["team_name"][0]
+        self.df = self.df.drop(columns=["team_id", "team_name"])
+
+        ser_metrics = self.df.squeeze()
+
+        return self.data_point_class(
+            id=id,
+            name=name,
+            ser_metrics=ser_metrics,
+            relevant_metrics=self.metrics,
+        )
